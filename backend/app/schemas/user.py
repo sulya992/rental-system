@@ -10,12 +10,14 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    pass  # потом добавим пароль, если нужно
+    # позже сюда добавим пароль, если понадобится
+    pass
 
 
 class UserRead(UserBase):
     id: int
+    is_active: bool
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        from_attributes = True  # Pydantic v2 (раньше было orm_mode

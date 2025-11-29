@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Integer, String, DateTime, func, Boolean
 
 from . import Base
 
@@ -7,8 +7,11 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    role = Column(String(32), nullable=False)
+    role = Column(String(32), nullable=False)  # tenant / landlord / agent / admin
     name = Column(String(255), nullable=False)
+
     email = Column(String(255), unique=True, index=True, nullable=True)
     phone = Column(String(32), unique=True, index=True, nullable=True)
+
+    is_active = Column(Boolean, nullable=False, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
