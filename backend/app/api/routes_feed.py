@@ -9,6 +9,8 @@ from ..models.listing import Listing
 from ..models.preferences import TenantPreference
 from ..models.feed_action import FeedAction
 from ..schemas import ListingRead, FeedActionCreate
+from ..models.lead import Lead
+from ..models.favorite import Favorite
 
 router = APIRouter(prefix="/feed", tags=["feed"])
 
@@ -82,5 +84,46 @@ def save_feed_action(
         source=action_in.source,
     )
     db.add(action)
+
+    # Дополнительно: лайк -> лид, favorite -> избранное
+    if action_in.action == "favorite":
+        existing = (
+            db.query(Favorite)
+            .filter(
+                Favorite.user_id == action_in.user_id,
+                Favorite.listing_id == action_in.listing_id,
+            )
+            .first()
+        )
+        if existing is None:
+            fav = Favorite(
+                user_id=action_in.user_id,
+                listing_id=action_in.listing_id,
+            )
+            db.add(fav)
+
+    if action_in.action == "like":
+        existing_lead = (
+            db.query(Lead)
+            .filter(
+                Lead.tenant_id == action_in.user_id,
+                Lead.listing_id == action_in.listing_id,
+            )
+            .first()
+        )
+        if existing_lead is None:
+            # owner_id сейчас не знаем – позже будем брать из Listing.owner_id
+            listing = db.query(Listing).filter(Listing.id == action_in.listing_id).first()
+            owner_id = listing.owner_id if listing else None
+
+            lead = Lead(
+                tenant_id=action_in.user_id,
+                listing_id=action_in.listing_id,
+                owner_id=owner_id,
+                status="new",
+            )
+            db.add(lead)
+
     db.commit()
     return {"status": "ok"}
+
