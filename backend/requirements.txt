@@ -8,3 +8,6 @@ python-dotenv
 alembic
 pydantic[email]
 email-validator
+passlib
+python-jose[cryptography]
+python-multipart
