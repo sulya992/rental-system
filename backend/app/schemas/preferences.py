@@ -19,7 +19,8 @@ class TenantPreferenceBase(BaseModel):
 
 
 class TenantPreferenceCreate(TenantPreferenceBase):
-    user_id: int  # пока так, позже заменим на текущего юзера через JWT
+    user_id: int | None = None  # будет игнорироваться и подменяться текущим пользователем
+
 
 
 class TenantPreferenceRead(TenantPreferenceBase):

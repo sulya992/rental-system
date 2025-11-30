@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from ..deps import get_db
+from ..deps import get_db, get_current_user
 from ..models.favorite import Favorite
 from ..models.listing import Listing
+from ..models.user import User
 from ..schemas import FavoriteCreate, FavoriteRead, ListingRead
 
 router = APIRouter(prefix="/favorites", tags=["favorites"])
@@ -11,16 +12,16 @@ router = APIRouter(prefix="/favorites", tags=["favorites"])
 
 @router.get("/", response_model=list[ListingRead])
 def list_favorites(
-    user_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Возвращаем список объявлений, добавленных в избранное пользователем.
+    Список объявлений, добавленных в избранное текущим пользователем.
     """
     query = (
         db.query(Listing)
         .join(Favorite, Favorite.listing_id == Listing.id)
-        .filter(Favorite.user_id == user_id)
+        .filter(Favorite.user_id == current_user.id)
         .filter(Listing.is_active.is_(True))
         .order_by(Favorite.created_at.desc())
     )
@@ -31,44 +32,46 @@ def list_favorites(
 def add_favorite(
     fav_in: FavoriteCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Добавить объявление в избранное (если ещё не в избранном).
+    Добавить объявление в избранное текущего пользователя.
     """
-    fav = (
+    existing = (
         db.query(Favorite)
         .filter(
-            Favorite.user_id == fav_in.user_id,
+            Favorite.user_id == current_user.id,
             Favorite.listing_id == fav_in.listing_id,
         )
         .first()
     )
 
-    if fav is None:
-        fav = Favorite(
-            user_id=fav_in.user_id,
-            listing_id=fav_in.listing_id,
-        )
-        db.add(fav)
-        db.commit()
-        db.refresh(fav)
+    if existing:
+        return existing
 
+    fav = Favorite(
+        user_id=current_user.id,
+        listing_id=fav_in.listing_id,
+    )
+    db.add(fav)
+    db.commit()
+    db.refresh(fav)
     return fav
 
 
 @router.delete("/{listing_id}")
 def remove_favorite(
     listing_id: int,
-    user_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Удалить объявление из избранного для пользователя.
+    Удалить объявление из избранного текущего пользователя.
     """
     fav = (
         db.query(Favorite)
         .filter(
-            Favorite.user_id == user_id,
+            Favorite.user_id == current_user.id,
             Favorite.listing_id == listing_id,
         )
         .first()

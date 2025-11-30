@@ -3,10 +3,11 @@ from pydantic import BaseModel
 
 
 class LeadBase(BaseModel):
-    tenant_id: int
+    tenant_id: int | None = None  # возьмём из current_user.id
     listing_id: int
     owner_id: int | None = None
     status: str = "new"
+
 
 
 class LeadCreate(LeadBase):

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ..deps import get_db
+from ..deps import get_db, get_current_user
 from ..models.lead import Lead
+from ..models.user import User
 from ..schemas import LeadCreate, LeadRead
 
 router = APIRouter(prefix="/leads", tags=["leads"])
@@ -12,12 +13,16 @@ router = APIRouter(prefix="/leads", tags=["leads"])
 def create_lead(
     lead_in: LeadCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Создать лид: арендатор заинтересовался конкретным объявлением.
+    Создать лид от лица текущего пользователя (арендатора).
+    Обычно это делает /feed/action, но можно и вручную.
     """
+    tenant_id = current_user.id
+
     lead = Lead(
-        tenant_id=lead_in.tenant_id,
+        tenant_id=tenant_id,
         listing_id=lead_in.listing_id,
         owner_id=lead_in.owner_id,
         status=lead_in.status or "new",
@@ -30,15 +35,15 @@ def create_lead(
 
 @router.get("/my", response_model=list[LeadRead])
 def list_my_leads(
-    tenant_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Лиды, созданные этим арендатором (он куда-то откликался).
+    Лиды текущего пользователя как арендатора.
     """
     leads = (
         db.query(Lead)
-        .filter(Lead.tenant_id == tenant_id)
+        .filter(Lead.tenant_id == current_user.id)
         .order_by(Lead.created_at.desc())
         .all()
     )
@@ -47,15 +52,21 @@ def list_my_leads(
 
 @router.get("/for-me", response_model=list[LeadRead])
 def list_leads_for_owner(
-    owner_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Лиды по объявлениям этого владельца/агента.
+    Лиды по объявлениям текущего владельца/агента.
     """
+    if current_user.role not in ("landlord", "agent", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only owners/agents/admin can view leads for them",
+        )
+
     leads = (
         db.query(Lead)
-        .filter(Lead.owner_id == owner_id)
+        .filter(Lead.owner_id == current_user.id)
         .order_by(Lead.created_at.desc())
         .all()
     )
