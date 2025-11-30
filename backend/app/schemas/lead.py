@@ -9,7 +9,6 @@ class LeadBase(BaseModel):
     status: str = "new"
 
 
-
 class LeadCreate(LeadBase):
     pass
 
