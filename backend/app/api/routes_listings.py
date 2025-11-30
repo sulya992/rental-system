@@ -34,6 +34,36 @@ def create_listing(
     db.refresh(listing)
     return listing
 
+@router.get("/", response_model=list[ListingRead])
+def list_listings(
+    city: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    """
+    Список активных объявлений (публичный).
+    """
+    query = db.query(Listing).filter(Listing.is_active.is_(True))
+    if city:
+        query = query.filter(Listing.city == city)
+    listings = query.order_by(Listing.created_at.desc()).all()
+    return listings
+
+@router.get("/my", response_model=list[ListingRead])
+def list_my_listings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Объявления текущего пользователя как владельца/агента.
+    """
+    listings = (
+        db.query(Listing)
+        .filter(Listing.owner_id == current_user.id)
+        .order_by(Listing.created_at.desc())
+        .all()
+    )
+    return listings
+
 
 @router.get("/", response_model=list[ListingRead])
 def list_listings(

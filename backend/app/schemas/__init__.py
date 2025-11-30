@@ -13,6 +13,7 @@ from .favorite import FavoriteCreate, FavoriteRead
 from .lead import LeadCreate, LeadRead
 
 
+
 __all__ = [
     "UserCreate",
     "UserRead",
@@ -25,6 +26,9 @@ __all__ = [
     "UserLogin",
     "Token",
     "TelegramAuth",
+    "AdminUserUpdate",
+    "AdminUserRead",
+    "AdminListingRead",
     "FeedActionRead",
     "FavoriteCreate",
     "FavoriteRead",
