@@ -2,7 +2,7 @@
 
 Monorepo for:
 - backend (FastAPI + PostgreSQL)
-- telegram-bot (future)
+- telegram-bot 
 - web frontend (future)
 
 ## Quick start (local)
