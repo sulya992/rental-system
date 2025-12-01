@@ -31,7 +31,7 @@ def list_users(
     return users
 
 
-@router.patch("/users/{user_id}", response_model[AdminUserRead])
+@router.patch("/users/{user_id}", response_model=AdminUserRead)
 def update_user(
     user_id: int,
     payload: AdminUserUpdate,
